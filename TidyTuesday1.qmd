@@ -1,0 +1,90 @@
+---
+title: "Tidy Tuesday 1"
+author: "Joshua Segebre"
+date: "September 21, 2024"
+---
+
+```{r, warnings=FALSE}
+library("tidytuesdayR")
+library("ggpubr")
+library("tidyverse")
+```
+
+```{r, warnings=FALSE}
+tuesdata <- tidytuesdayR::tt_load('2024-10-01')
+chess <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2024/2024-10-01/chess.csv')
+```
+
+# Notes
+
+Blitz rating (white or black) - This is how high a player is ranked in regards to their ability.
+
+# Best Ranked Players (White_Ranking)
+
+This chunk of code determines who are the best players by their white_ranking, also known as Blitz ranking in the chess world.
+
+```{r}
+bestChessPlayers <- chess %>% filter(white_rating>2000) %>% group_by(white_id) %>% summarise(count=n()) %>% arrange(desc(count)) %>% head(5)
+
+bestChessPlayers
+```
+
+# Top 5 Openings - Best Players
+
+This chunk of code determines out of the top five best players, what are the top five openings.
+
+```{r}
+bestOpening <- chess %>% filter(white_id%in%c("lance5500","bosspotato","robixy","traced","tori92")) %>% group_by(opening_name) %>% summarize(count=n()) %>% arrange(desc(count)) %>% head(5)
+
+bestOpening
+```
+
+# Worst Ranked Players (White_Ranking)
+
+This chunk of code determines who are the worst players by their white_ranking, also known as Blitz ranking in the chess world.
+
+```{r}
+worstChess <- chess %>% filter(white_rating<1000) %>% group_by(white_id) %>% summarise(count=n()) %>% arrange(desc(count)) %>% head(5)
+
+worstChess
+
+```
+
+# Top 5 Openings - Worst Players
+
+This chunk of code determines out of the top five worst players, what are the top five openings.
+
+```{r}
+worstOpening <- chess %>% filter(white_id%in%c("marigw","thebestofthebad","crazyscientist1","xamio","drakon1")) %>% group_by(opening_name) %>% summarize(count=n()) %>% arrange(desc(count)) %>% head(5)
+
+worstOpening
+```
+
+Using the top five openings by the worst players, I created a new dataset with just white_rating, victory_status, turns, and opening_name columns. I removed resign from the victory status as players can resign for any given reasons (e.g., game is taking too long) therefore not an accurate representation of the real outcome of the game.
+
+```{r}
+worstMoves <- chess %>% filter(opening_name %in% c("Queen's Pawn Game","King's Pawn Game","Van't Kruijs Opening","Queen's Pawn","Englund Gambit"), victory_status !="resign") %>% arrange((desc(turns))) %>% select(white_rating, victory_status, turns, opening_name)
+
+worstMoves
+```
+
+```{r}
+ggplot(worstMoves, aes(x=white_rating, y=turns, color=victory_status)) + geom_point() + facet_wrap(~opening_name) + labs(title="Top 5 Moves by the Worst 5 Players in Chess", x= "White Rating", y="Turns", color="Victory Status") + theme_bw() 
+```
+
+Using the top five openings by the best players, I created a new dataset with just white_rating, victory_status, turns, and opening_name columns. I removed resign from the victory status as players can resign for any given reasons (e.g., game is taking too long) therefore not an accurate representation of the real outcome of the game.
+
+```{r}
+bestMoves <- chess %>% filter(opening_name %in% c("Caro-Kann Defense: Exchange Variation","Indian Game","Ponziani Opening","Ponziani Opening: Jaenisch Counterattack","Sicilian Defense: Old Sicilian"),victory_status !="resign") %>% arrange((desc(turns))) %>% select(white_rating, victory_status, turns, opening_name)
+
+bestMoves
+
+```
+
+```{r}
+ggplot(bestMoves, aes(x=white_rating, y=turns, color=victory_status)) + geom_point() + facet_wrap(~opening_name) + labs(title="Top 5 Moves by the Top 5 Players in Chess", x= "White Rating", y="Turns", color="Victory Status") + theme_bw()
+```
+
+# Conclusions
+
+Overall, there doesn't seem to be a strong relationship with the opening move of a chess game and the outcome as the moves used by the worst ranked players have a mixed results of victory_status. The same can be said about the moves used by the highly ranked players. However, the openings used by the top players are used at a lower frequency than the openings used by the worst players.
