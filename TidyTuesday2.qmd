@@ -1,0 +1,39 @@
+---
+title: "TidyTuesday2"
+author: "Joshua Segebre"
+date: "October 20, 2024"
+---
+
+# Loading the Dataset
+
+```{r}
+cia_factbook <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2024/2024-10-22/cia_factbook.csv')
+library(ggplot2)
+library(dplyr)
+```
+
+# Data Wrangling + Mutating
+
+```{r}
+addedCIA<- cia_factbook %>% filter(!is.na(population_growth_rate)) %>% mutate(pgrCategory= case_when(
+  population_growth_rate>2 ~ "Rapidly Increasing",
+  population_growth_rate> 0.2 & population_growth_rate<=2 ~ "Increasing",
+  population_growth_rate>=0 & population_growth_rate<= 0.2 ~ "Stagnant",
+  population_growth_rate<0 ~"Decreasing"
+))
+```
+
+# Graph
+
+```{r, warning=FALSE}
+ggplot(addedCIA,aes(x=death_rate, y=life_exp_at_birth, size=population, color=pgrCategory)) + geom_point(alpha=0.6) + geom_smooth(method="loess", se=FALSE, color="red", show.legend=FALSE) +
+  labs(x = "Death Rate per 1000 People",
+       y = "Life Expectancy at Birth in Years",
+       title = "Death Rate per Country by Life Expectancy (2014)",
+       color = "Growth Rate of Country") +
+  scale_size_continuous(name = "Population Size",
+                        range = c(1,13),
+                        breaks = c(48, 5000000, 20000000, 50000000, 100000000, 1355692576),
+                        labels = c("48 People (Pitcairn Islands)", "5 Million", "20 Million", "50 Million","100 Million", "1.3+ Billion (China)")) +
+  theme_minimal() 
+```
