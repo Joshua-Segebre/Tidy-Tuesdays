@@ -1,0 +1,77 @@
+---
+title: "Tidy Tuesday 3"
+author: "Joshua Segebre"
+format: html
+editor: visual
+---
+
+```{r}
+library(tidytext)
+library(tidyverse)
+library(dplyr)
+library(janitor)
+```
+
+
+```{r}
+# Option 1: tidytuesdayR package 
+tuesdata <- tidytuesdayR::tt_load('2024-10-29')
+
+monster_movie_genres <- tuesdata$monster_movie_genres
+monster_movies <- tuesdata$monster_movies
+
+```
+
+
+```{r}
+movie_info <- monster_movies %>% 
+  clean_names()
+
+movie_words <- movie_info %>%
+  unnest_tokens(word, primary_title) %>%
+  anti_join(stop_words, by = "word") %>%
+  filter(!word %in% c("monster","monsters", "movie")) %>% 
+  count(word, sort = TRUE)
+
+movie_words %>%
+  top_n(10) %>%
+  ggplot(aes(x = reorder(word, n), y = n)) +
+  geom_bar(stat = "identity", fill = "magenta") +
+  coord_flip() +
+  labs(title = "Most Common Words used in Movie Titles",
+       x = "Words",
+       y = "Frequency") +
+  theme_minimal()
+```
+
+```{r}
+top10MoviesWording <- monster_movies %>% filter(str_detect(monster_movies$primary_title, "loch|sea|attack|2|island|space|party|night|mighty|frankenstein"))
+```
+
+```{r}
+
+top10MoviesWording <- top10MoviesWording %>%
+  mutate(zscores = (average_rating - mean(average_rating)) / sd(average_rating))
+
+top10MoviesWording <- top10MoviesWording %>%  mutate(aboveorbelow = ifelse(zscores>0, "Above Average", "Below Average"))
+
+```
+
+
+```{r}
+ggplot(data = top10MoviesWording, aes(x = reorder(str_wrap(primary_title, 30), desc(zscores)), y = zscores, label = zscores, fill = aboveorbelow)) + 
+  geom_bar(stat = "identity") + 
+  theme_classic() + 
+  coord_flip() + 
+  scale_y_continuous(limits = c(floor(min(top10MoviesWording$zscores)), ceiling(max(top10MoviesWording$zscores))), 
+                     expand = c(0, 0), 
+                     breaks = seq(floor(min(top10MoviesWording$zscores)), ceiling(max(top10MoviesWording$zscores)), by = 1)) + scale_fill_manual(values = c("Above Average" = "#1434A4", "Below Average" = "#a41434")) + 
+  labs(x = "Movie Title", 
+       y = "Average Rating of Movies (Z-Score)", 
+       fill = "Z-Score Classification", 
+       title = "Z-Scores from Monster Movies with Most Common Words in Titles") + theme(axis.text.y = element_text(size = 4.5),
+      plot.title = element_text(size = 9),
+      axis.title.x = element_text(size=9),
+      axis.title.y = element_text(size=9))
+```
+
